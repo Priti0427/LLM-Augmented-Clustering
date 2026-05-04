@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtualenvs
+.venv/
+venv/
+env/
+
+# Test / type-check caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Claude Code local settings
+.claude/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# OpenAI stage cache (per-run; do not commit)
+data_cache/openai_cache/*
+!data_cache/openai_cache/.gitkeep
+
+# Streamlit
+.streamlit/secrets.toml

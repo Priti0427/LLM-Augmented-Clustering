@@ -171,4 +171,7 @@ Released under the [MIT License](LICENSE).
 
 ## Acknowledgments
 
-Dataset: [ABCD v1.1](https://github.com/asappresearch/abcd) (Chen et al., 2021). Embeddings via OpenAI `text-embedding-3-large`; LLM stages via `gpt-4o-mini`. Clustering via [UMAP](https://github.com/lmcinnes/umap) and [HDBSCAN](https://github.com/scikit-learn-contrib/hdbscan).
+- Dataset: [ABCD v1.1](https://github.com/asappresearch/abcd) (Chen et al., 2021). Embeddings via OpenAI `text-embedding-3-large`; 
+- LLM stages via `gpt-4o-mini`. 
+- Clustering via [UMAP](https://github.com/lmcinnes/umap) 
+- [HDBSCAN](https://github.com/scikit-learn-contrib/hdbscan)

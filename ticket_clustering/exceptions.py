@@ -1,0 +1,2 @@
+class TicketClusteringError(RuntimeError):
+    pass

@@ -1,0 +1,53 @@
+{
+  "metadata": {
+    "source": "tiny fixture",
+    "date_range": {
+      "start": "2026-01-01T00:00:00Z",
+      "end": "2026-01-02T00:00:00Z"
+    }
+  },
+  "tickets": [
+    {
+      "id": "t1",
+      "subject": "Wrong size shoes received",
+      "description": "I got size 11 instead of size 9",
+      "language": "en",
+      "status": "open",
+      "priority": "high",
+      "messages": [
+        {
+          "role": "customer",
+          "content": "Please help, wrong size shoes arrived"
+        }
+      ]
+    },
+    {
+      "id": "t2",
+      "subject": "Package marked delivered but missing",
+      "description": "Tracking says delivered but nothing arrived",
+      "language": "en",
+      "status": "pending",
+      "priority": "normal",
+      "messages": [
+        {
+          "role": "customer",
+          "content": "My package is missing"
+        }
+      ]
+    },
+    {
+      "id": "t3",
+      "subject": "Need refund for damaged item",
+      "description": "The item arrived damaged and I want a refund",
+      "language": "en",
+      "status": "solved",
+      "priority": "low",
+      "messages": [
+        {
+          "role": "customer",
+          "content": "I need a refund"
+        }
+      ]
+    }
+  ]
+}

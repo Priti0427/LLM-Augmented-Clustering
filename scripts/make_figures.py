@@ -33,7 +33,7 @@ OUT_DIR.mkdir(exist_ok=True)
 NAVY = "#1B2A4A"
 TEAL = "#2E86AB"
 LIGHT_BG = "#F5F5F5"
-NOISE = "#CCCCCC"
+NOISE = "#555555"  # dark grey so HDBSCAN noise is actually visible on white
 
 
 def _load_cache() -> dict:
@@ -46,14 +46,24 @@ def _load_cache() -> dict:
 
 
 def _projection_arrays(method: dict):
-    """Return (xs, ys, cluster_ids) for a method, or None if no real projection."""
+    """Return (xs, ys, cluster_ids, n_filtered) for a method, or None.
+
+    Method D records filtered-out tickets (non-issues) as cluster_id=-1 with
+    projection coordinates (0, 0) because they never went through UMAP. We
+    drop those points so the rendering shows real HDBSCAN noise rather than a
+    huge stack at the origin, and return the count separately for annotation.
+    """
     proj = method.get("projection") or []
     if not proj:
         return None
     xs = np.array([p["x"] for p in proj], dtype=float)
     ys = np.array([p["y"] for p in proj], dtype=float)
     cs = np.array([p["cluster_id"] for p in proj], dtype=int)
-    return xs, ys, cs
+
+    at_origin = (np.abs(xs) < 1e-6) & (np.abs(ys) < 1e-6) & (cs == -1)
+    n_filtered = int(at_origin.sum())
+    keep = ~at_origin
+    return xs[keep], ys[keep], cs[keep], n_filtered
 
 
 def _plot_scatter(ax, arrays, title, subtitle):
@@ -65,10 +75,10 @@ def _plot_scatter(ax, arrays, title, subtitle):
     ax.set_yticks([])
     ax.set_title(title, fontsize=15, color=NAVY, fontweight="bold", loc="left",
                  pad=8)
-    ax.text(0.01, -0.06, subtitle, transform=ax.transAxes, fontsize=11,
-            color=NAVY, alpha=0.8)
 
     if arrays is None:
+        ax.text(0.01, -0.06, subtitle, transform=ax.transAxes, fontsize=11,
+                color=NAVY, alpha=0.8)
         ax.text(0.5, 0.5,
                 "Method not run\n(no projection in cache)",
                 ha="center", va="center", transform=ax.transAxes,
@@ -76,17 +86,32 @@ def _plot_scatter(ax, arrays, title, subtitle):
         ax.set_facecolor(LIGHT_BG)
         return
 
-    xs, ys, cs = arrays
-    noise_mask = cs == -1
-    if noise_mask.any():
-        ax.scatter(xs[noise_mask], ys[noise_mask], s=6, c=NOISE, alpha=0.55,
-                   linewidths=0)
-    signal = ~noise_mask
+    xs, ys, cs, n_filtered = arrays
+    # Signal first so noise sits on top in a distinguishable dark grey.
+    signal = cs != -1
     if signal.any():
         n_clusters = max(int(cs[signal].max()) + 1, 1)
         cmap = plt.cm.get_cmap("turbo", n_clusters)
-        ax.scatter(xs[signal], ys[signal], s=9, c=cs[signal], cmap=cmap,
+        ax.scatter(xs[signal], ys[signal], s=11, c=cs[signal], cmap=cmap,
                    alpha=0.85, linewidths=0)
+    noise = cs == -1
+    n_noise = int(noise.sum())
+    if noise.any():
+        ax.scatter(xs[noise], ys[noise], s=18, facecolors="none",
+                   edgecolors=NOISE, linewidths=1.0, alpha=0.85,
+                   label="noise")
+
+    # Compose subtitle with the noise/filtered breakdown so it's auditable.
+    extra = []
+    if n_noise:
+        extra.append(f"{n_noise} HDBSCAN noise")
+    if n_filtered:
+        extra.append(f"{n_filtered} filtered-out (not clustered)")
+    bottom = subtitle
+    if extra:
+        bottom = (bottom + "  ·  " + " · ".join(extra)) if bottom else " · ".join(extra)
+    ax.text(0.01, -0.06, bottom, transform=ax.transAxes, fontsize=10,
+            color=NAVY, alpha=0.85)
 
 
 def _metrics_subtitle(method: dict) -> str:
@@ -349,7 +374,7 @@ def make_hero_strip(cache: dict):
     a_arr = _projection_arrays(methods.get("A", {}))
     ax = axes[0]
     if a_arr is not None:
-        xs, ys, _ = a_arr
+        xs, ys, _cs, _n = a_arr
         ax.scatter(xs, ys, s=8, c="#888888", alpha=0.55, linewidths=0)
     ax.set_title("9,426 raw messages", fontsize=14, color=NAVY,
                  fontweight="bold", loc="left", pad=6)

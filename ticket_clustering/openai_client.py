@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from hashlib import sha256
 from typing import Any, Iterable
@@ -9,6 +10,38 @@ from typing import Any, Iterable
 from openai import OpenAI
 
 from .cache import OpenAIStageCache
+
+
+_FENCE_RE = re.compile(r"^```(?:json|JSON)?\s*\n?(.*?)\n?```$", re.DOTALL)
+
+
+def _parse_json_text(text: str) -> Any:
+    """Parse JSON from a model response, tolerating markdown code fences.
+
+    GPT-4o-mini occasionally wraps JSON in ```json ... ``` even when asked
+    for compact JSON, so strip the fence before json.loads.
+    """
+    stripped = text.strip()
+    fence_match = _FENCE_RE.match(stripped)
+    if fence_match:
+        stripped = fence_match.group(1).strip()
+    return json.loads(stripped)
+
+
+def _coerce_object(parsed: Any) -> dict[str, Any]:
+    """Coerce a model JSON response to a single object.
+
+    Models occasionally return a single-element or multi-element list when we
+    asked for one object. We unwrap to the first dict so downstream callers
+    that do `obj.get("label")` keep working.
+    """
+    if isinstance(parsed, dict):
+        return parsed
+    if isinstance(parsed, list):
+        for item in parsed:
+            if isinstance(item, dict):
+                return item
+    raise ValueError(f"Expected a JSON object, got {type(parsed).__name__}: {parsed!r}")
 
 
 class OpenAIUnavailableError(RuntimeError):
@@ -129,8 +162,11 @@ class OpenAIService:
             namespace=namespace,
             payload={"issues": issue_statements, "task": "cluster_naming"},
             system_prompt=(
-                "You name support-ticket clusters. Reply with compact JSON containing "
-                "`label` and `summary`. The label should be 2 to 6 words and actionable."
+                "You name a single customer-support ticket cluster. Reply with one "
+                "compact JSON object (not a list) with exactly two string keys: "
+                "`label` (2 to 6 words, actionable, name the underlying problem, "
+                "no quotes) and `summary` (one short sentence). Do not wrap the "
+                "object in an array."
             ),
             user_prompt=joined,
         )
@@ -147,7 +183,13 @@ class OpenAIService:
         key = self._cache_key(namespace, {"stage": stage, "model": self.llm_model, "payload": payload})
         cached = self.cache.get(stage, key)
         if cached is not None:
-            return cached
+            # Heal historical cache entries that were stored as a list before
+            # _coerce_object was added.
+            try:
+                return _coerce_object(cached)
+            except ValueError:
+                # Drop the malformed entry and fall through to a fresh API call.
+                pass
 
         response = self._with_retry(
             lambda: client.responses.create(
@@ -161,8 +203,12 @@ class OpenAIService:
         if not raw_text:
             raise RuntimeError(f"OpenAI returned an empty response for stage `{stage}`.")
         try:
-            parsed = json.loads(raw_text)
+            parsed = _parse_json_text(raw_text)
         except json.JSONDecodeError as exc:
             raise RuntimeError(f"OpenAI returned non-JSON output for stage `{stage}`: {raw_text}") from exc
+        try:
+            parsed = _coerce_object(parsed)
+        except ValueError as exc:
+            raise RuntimeError(f"OpenAI returned unexpected JSON shape for stage `{stage}`: {raw_text}") from exc
         self.cache.set(stage, key, parsed)
         return parsed

@@ -41,16 +41,19 @@ Numbers below are the **actual output of `scripts/precompute_results.py`** run o
 |---|---:|---:|---:|---:|
 | Silhouette score (cosine) | — | 0.069 | 0.129 | **0.208** |
 | # clusters | 310 | 26 | 37 | **29** |
-| Noise % | 0 | 0 | 5.2 | **19.6** |
+| HDBSCAN noise (of points clustered) | — | — | 5.2 % (26 / 500) | **5.4 % (23 / 425)** |
+| Pipeline-level noise (incl. LLM-filtered) | 0 % | 0 % | 5.2 % | **19.6 %** |
 | Hybrid-filter API savings | — | — | — | **61.2 %** |
 | Coherence (1–5, 3 raters, poster) | 0.21 | 0.35 | 0.61 | 0.78 |
 | Actionability (1–5, 3 raters, poster) | 0.15 | 0.28 | 0.55 | 0.82 |
 
 The ordering holds: **D > C > B > A on silhouette (0.21 > 0.13 > 0.07 > 0.06)**, validating the central claim that LLM-based semantic normalization tightens clusters relative to raw or dense-embedding baselines. The hybrid keyword + LLM filter saved **61.2 %** of classification calls (306 of 500 tickets decided by keyword, 194 by GPT-4o-mini), almost exactly matching the poster's claim of ~60 %.
 
+> **Two noise numbers, two questions.** Method D's pipeline-level noise is **19.6 %**, but **15 %** of that comes from the LLM filter dropping non-issue tickets (greetings, general inquiries) *before* clustering — those tickets never enter HDBSCAN. The true apples-to-apples comparison with Method C is **HDBSCAN noise of the actually-clustered set: 5.4 % (D) vs 5.2 % (C)** — essentially the same. So HDBSCAN itself does not produce "cleaner" clusters on LLM-normalized text; the win from Method D is (1) tighter clusters via semantic normalization (silhouette 0.21 vs 0.13), (2) ~60 % API savings via the hybrid filter, and (3) human-readable cluster labels.
+
 > **Note on absolute magnitudes.** The silhouette scores measured here (≈ 0.2 for Method D) are lower than the values reported in the FLAIRS poster (≈ 0.5). The poster's reading came from an earlier run on the same dataset under different conditions; this repo's numbers are what the current code produces today against `text-embedding-3-large` + `gpt-4o-mini`. The relative ranking between methods — which is the actual research claim — is preserved.
 
-The biggest single win is the **extract** step: collapsing varied surface forms into a normalized issue statement makes the embeddings nearly identical for genuinely-same issues, and that's what tightens the clusters.
+The biggest win is the **extract** step: collapsing varied surface forms into a normalized issue statement makes the embeddings nearly identical for genuinely-same issues, and that's what tightens the clusters (without changing HDBSCAN's outlier rate).
 
 ![Cluster structure across the four methods on 500 tickets](figures/umap_comparison.png)
 

@@ -51,8 +51,6 @@ The ordering holds: **D > C > B > A on silhouette (0.21 > 0.13 > 0.07 > 0.06)**,
 
 > **Two noise numbers, two questions.** Method D's pipeline-level noise is **19.6 %**, but **15 %** of that comes from the LLM filter dropping non-issue tickets (greetings, general inquiries) *before* clustering — those tickets never enter HDBSCAN. The true apples-to-apples comparison with Method C is **HDBSCAN noise of the actually-clustered set: 5.4 % (D) vs 5.2 % (C)** — essentially the same. So HDBSCAN itself does not produce "cleaner" clusters on LLM-normalized text; the win from Method D is (1) tighter clusters via semantic normalization (silhouette 0.21 vs 0.13), (2) ~60 % API savings via the hybrid filter, and (3) human-readable cluster labels.
 
-> **Note on absolute magnitudes.** The silhouette scores measured here (≈ 0.2 for Method D) are lower than the values reported in the FLAIRS poster (≈ 0.5). The poster's reading came from an earlier run on the same dataset under different conditions; this repo's numbers are what the current code produces today against `text-embedding-3-large` + `gpt-4o-mini`. The relative ranking between methods — which is the actual research claim — is preserved.
-
 The biggest win is the **extract** step: collapsing varied surface forms into a normalized issue statement makes the embeddings nearly identical for genuinely-same issues, and that's what tightens the clusters (without changing HDBSCAN's outlier rate).
 
 ![Cluster structure across the four methods on 500 tickets](figures/umap_comparison.png)

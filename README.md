@@ -153,7 +153,7 @@ You can drop in your own dataset following the same `tickets[]` shape via the up
 
 ## Reproducing the figures
 
-Every PNG in `figures/` is produced from `data_cache/results/444d97db9a6e19d5.json` by `scripts/make_figures.py`. No image is hand-drawn or AI-generated.
+Every PNG in `figures/` is produced from `data_cache/results/444d97db9a6e19d5.json` by `scripts/make_figures.py`. 
 
 To regenerate from the committed cache (no API key needed):
 

@@ -86,11 +86,11 @@ Run the tests:
 PYTHONPATH=. pytest tests/
 ```
 
-## Repo layout
+## Repo structure
 
 ```
 .
-├── app.py                          # Streamlit comparison UI
+├── app.py                          # UI
 ├── ticket_clustering/              # Core package
 │   ├── pipeline.py                 # PipelineRunner — orchestrates all four methods
 │   ├── openai_client.py            # OpenAI wrapper with on-disk caching

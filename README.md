@@ -91,7 +91,7 @@ PYTHONPATH=. pytest tests/
 ```
 .
 ├── app.py                          # UI
-├── ticket_clustering/              # Core package
+├── ticket_clustering/              # Core work
 │   ├── pipeline.py                 # PipelineRunner — orchestrates all four methods
 │   ├── openai_client.py            # OpenAI wrapper with on-disk caching
 │   ├── data.py                     # Dataset loader + validator
